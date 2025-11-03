@@ -1,0 +1,511 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1Z_XR0z3t-OA1GOGbgJ7gMI5s8gDcev7F_rjCS3TlI8w",
+          "mode": "list",
+          "cachedResultName": "n8n",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z_XR0z3t-OA1GOGbgJ7gMI5s8gDcev7F_rjCS3TlI8w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z_XR0z3t-OA1GOGbgJ7gMI5s8gDcev7F_rjCS3TlI8w/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -80
+      ],
+      "id": "b6221a88-fdc6-4204-9d10-8b8742817ef5",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "AnrDgcq8P0P6Sdej",
+          "name": "Google Sheets Trigger account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3a780700-e7b7-4de0-b05c-4485841328c3",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        -80
+      ],
+      "id": "f2ddc0f6-73fc-4f0a-8254-0cebf7515f2e",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -144
+      ],
+      "id": "8cb83cf5-5264-4f6c-a319-9f19ec768cd2",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You're a Notion notes writer. First, carefully read the topic and write in a clear, human style. Handle the topic '{{ $json.TOPIC }}', and ensure the response fits Notion's recommended length for notes (usually concise, ~200-500 words). Only reply using a JSON object exactly in this format: { 'topic': '{{ $json.TOPIC }}', 'post': '{{ $json['Post Notes'] }}' }. Focus on making text easy to read and suitable for quick review in Notion",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        -144
+      ],
+      "id": "720e2df8-a3fb-458c-89b9-064154116df2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        448,
+        64
+      ],
+      "id": "9a718caf-9a97-418e-975f-e4ee0088f777",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0ZFpSLc3HiE8BHSZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash-exp-image-generation",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash-exp-image-generation"
+        },
+        "prompt": "=Create a high-quality visually engaging image for a preparing notes based on topic refer to geekforgeek :\n {{ $('Limit').item.json.TOPIC }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        112,
+        208
+      ],
+      "id": "0020c076-342a-4e3c-a870-41f51114ddcd",
+      "name": "Generate an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0ZFpSLc3HiE8BHSZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n// Get all items\n// Function to split text into chunks of max length\nfunction splitIntoChunks(text, maxLength = 2000) {\n  const chunks = [];\n  while (text.length > 0) {\n    // Find a good breaking point near maxLength\n    let splitPoint = maxLength;\n    if (text.length > maxLength) {\n      // Try to split at newline\n      const newlineIndex = text.lastIndexOf('\\n', maxLength);\n      if (newlineIndex > 0) {\n        splitPoint = newlineIndex;\n      }\n    }\n    chunks.push(text.slice(0, splitPoint));\n    text = text.slice(splitPoint).trim();\n  }\n  return chunks;\n}\n\n// Loop over input items\nconst items = $input.all();\n\nfor (const item of items) {\n    // Check that item.json and item.json.output exist, and 'PostNotes' is a string\n    if (item.json && item.json.output && typeof item.json.output.PostNotes === \"string\") {\n        // Replace escaped \"\\n\" with actual newline characters\n        let content = item.json.output.PostNotes.replace(/\\\\n/g, '\\n');\n        \n        // Split content into chunks of 2000 characters\n        const chunks = splitIntoChunks(content);\n        \n        // Join chunks with double newlines to create separate paragraphs\n        item.json.output.PostNotes = chunks.join('\\n\\n');\n    }\n}\n\n// Return the modified items\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        208
+      ],
+      "id": "6f737425-a2cb-4fd3-9081-9d95d7f1ac63",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "name": "=NotionNote_{{ $now.format('YYYYMMDD_HHmmss') }}.\n{{ $binary.data.fileExentesion || 'png' }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1Zx3QYfwBCRSDH_nnPLe2_uPnk9DWYZJK",
+          "mode": "list",
+          "cachedResultName": "n8nImages",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1Zx3QYfwBCRSDH_nnPLe2_uPnk9DWYZJK"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        368,
+        208
+      ],
+      "id": "36066ced-4748-4556-bad1-b12dfd577174",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "t4W76Ua9GJRKzM5N",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        576,
+        208
+      ],
+      "id": "b6fd7550-49aa-4d07-ba80-f2aa28c614cf",
+      "name": "Share file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "t4W76Ua9GJRKzM5N",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Z_XR0z3t-OA1GOGbgJ7gMI5s8gDcev7F_rjCS3TlI8w",
+          "mode": "list",
+          "cachedResultName": "n8n",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z_XR0z3t-OA1GOGbgJ7gMI5s8gDcev7F_rjCS3TlI8w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z_XR0z3t-OA1GOGbgJ7gMI5s8gDcev7F_rjCS3TlI8w/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "WEEk": "={{ $('Limit').item.json.WEEk }}",
+            "TOPIC": "={{ $('Limit').item.json.TOPIC }}",
+            "Status": "=posted",
+            "imageURL": "={{ $('Upload file').item.json.webViewLink }}",
+            "Post Notes": "={{ $('Code in JavaScript').item.json.output }}"
+          },
+          "matchingColumns": [
+            "WEEk"
+          ],
+          "schema": [
+            {
+              "id": "WEEk",
+              "displayName": "WEEk",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOPIC",
+              "displayName": "TOPIC",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "imageURL",
+              "displayName": "imageURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Post Notes",
+              "displayName": "Post Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -96,
+        416
+      ],
+      "id": "87c84422-b335-493e-b875-a7a2a5a5d418",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UhrHmLcb7mJ6EsS7",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": " {\n      \"type\": \"object\",\n      \"properties\": {\n        \"title\": {\"type\": \"string\"},\n        \"post\": {\"type\": \"string\"},\n        \"summary\": {\"type\": \"string\"}\n      },\n      \"required\": [\"title\", \"post\", \"summary\", \"conclusion\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        64
+      ],
+      "id": "5c54cb2b-1ca1-4298-a940-64c93da9ad86",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "value": "https://www.notion.so/Brototype-29a98b8713e180ef8a05c76cf0d424b8?source=copy_link",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        416
+      ],
+      "id": "93d956c2-1fc6-4cc6-be75-e5f54f951867",
+      "name": "Create a page",
+      "credentials": {
+        "notionApi": {
+          "id": "JbRHdkCZtcwgR8p2",
+          "name": "Notion account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Share file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share file": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Create a page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14a1cd34-ab3d-47c8-adaa-afd1fc1ea511",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d0a3ee63024c12fbf9c3596cfd8f9c999ed5b19b766237cb40808d9d87bbc53c"
+  },
+  "id": "mTklU0G05SoOMrQo",
+  "tags": []
+}
