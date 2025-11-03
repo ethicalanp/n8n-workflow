@@ -1,5 +1,7 @@
 # n8n Workflow: AI-Generated Notion Notes
 
+![Workflow Preview](https://media.licdn.com/dms/image/v2/D4E22AQHYoRGCe_jeJw/feedshare-shrink_2048_1536/B4EZpIZEoMHUAw-/0/1762151124418?e=1763596800&v=beta&t=yACTdb8fBStqgCgItrWdBm4itCs5siXyIxMm4lGva5E)
+
 This repository contains an n8n workflow that automates the generation of detailed, markdown-formatted notes for Notion using Google Generative AI. Given a topic, the workflow produces a structured note with a title and rich content, optimized for quick import into Notion.
 
 ---
